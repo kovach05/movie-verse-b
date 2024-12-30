@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Common.Models;
 
 [ApiController]
 [Route("api/movies")]
@@ -36,4 +37,75 @@ public class MoviesController : ControllerBase
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
+    
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetMovieById(int id)
+    {
+        try
+        {
+            var movie = await _tmdbService.GetMovieByIdAsync(id);
+            if (movie == null)
+            {
+                return NotFound($"Movie with ID {id} not found.");
+            }
+            return Ok(movie);
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode(500, $"External API error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+
+    [HttpGet("{id}/trailer")]
+    public async Task<IActionResult> GetMovieTrailer(int id)
+    {
+        try
+        {
+            var trailerKey = await _tmdbService.GetMovieTrailerKeyAsync(id);
+            if (string.IsNullOrEmpty(trailerKey))
+            {
+                return NotFound("Trailer not found.");
+            }
+    
+            return Ok(new { TrailerKey = trailerKey });
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode(404, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpGet("{id}/credits")]
+    public async Task<IActionResult> GetMovieCredits(int id)
+    {
+        try
+        {
+            var credits = await _tmdbService.GetMovieCreditsAsync(id); // Використовуємо метод з TMDBService
+            if (credits == null || !credits.Cast.Any())
+            {
+                return NotFound("No cast information found for this movie.");
+            }
+
+            return Ok(credits.Cast.Take(10)); // Повертаємо перших 10 акторів
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode(500, $"External API error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    
 }
