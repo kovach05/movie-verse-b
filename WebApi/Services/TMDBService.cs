@@ -107,6 +107,4 @@ public class TMDBService
             PropertyNameCaseInsensitive = true
         });
     }
-
-
 }

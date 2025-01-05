@@ -161,9 +161,9 @@ namespace WebApi
             AddJwtAuthentication(services, jwtSettings);
             
             services.AddScoped<IMovieRepository, MovieRepository>();
-            //services.AddScoped<IMovieService, MovieService>();
             services.AddScoped<TMDBService>() ;
             
+            services.AddHttpClient<TVService>();
             services.AddHttpClient<TMDBService>();
             services.AddTransient<TMDBService>();
         }

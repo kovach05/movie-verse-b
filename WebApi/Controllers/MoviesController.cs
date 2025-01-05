@@ -107,5 +107,21 @@ public class MoviesController : ControllerBase
         }
     }
 
+    // [Route("api/movies/popular")]
+    // [HttpGet]
+    // public async Task<IActionResult> GetPopularMovies()
+    // {
+    //     try
+    //     {
+    //         // Отримання даних з бази або TMDB API
+    //         var movies = await _movieService.GetPopularMoviesAsync();
+    //         return Ok(movies);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         return StatusCode(500, new { error = ex.Message });
+    //     }
+    // }
+
     
 }
