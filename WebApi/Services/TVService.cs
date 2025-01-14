@@ -1,7 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Common.DTOs;
 using Common.Models;
-using Newtonsoft.Json;
-using JsonSerializerOptions = System.Text.Json.JsonSerializerOptions;
 
 namespace Movie_Verse.Services;
 
@@ -27,7 +30,7 @@ public class TVService
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        var result = System.Text.Json.JsonSerializer.Deserialize<TMDBTVResponse>(content, new JsonSerializerOptions
+        var result = JsonSerializer.Deserialize<TMDBTVResponse>(content, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         });
@@ -35,5 +38,63 @@ public class TVService
         return result?.Results ?? new List<TmdbTVShow>();
     }
 
+    public async Task<TmdbTVShow> GetTvShowByIdAsync(int id)
+    {
+        var url = $"{_baseUrl}/tv/{id}?api_key={_apiKey}&language=en-US";
+        var response = await _httpClient.GetAsync(url);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Error fetching TV show details: {response.StatusCode}");
+        }
+
+        var content = await response.Content.ReadAsStringAsync();
+        var tvShow = JsonSerializer.Deserialize<TmdbTVShow>(content, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        return tvShow;
+    }
+    
+    public async Task<string> GetTvShowTrailerAsync(int id)
+    {
+        var url = $"{_baseUrl}/tv/{id}/videos?api_key={_apiKey}&language=en-US";
+        var response = await _httpClient.GetAsync(url);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Error fetching TV show trailer: {response.StatusCode}");
+        }
+
+        var content = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<TMDBVideoResponse>(content, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        // Знаходимо офіційний трейлер
+        var trailer = result?.Results?.Find(video => video.Type == "Trailer" && video.Site == "YouTube");
+        return trailer?.Key; // Повертаємо ключ для YouTube
+    }
+
+    public async Task<List<CastMember>> GetTvShowCreditsAsync(int id)
+    {
+        var url = $"{_baseUrl}/tv/{id}/credits?api_key={_apiKey}&language=en-US";
+        var response = await _httpClient.GetAsync(url);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Error fetching TV show credits: {response.StatusCode}");
+        }
+
+        var content = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<TMDbCreditsResponse>(content, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        return result?.Cast ?? new List<CastMember>();
+    }
 
 }
