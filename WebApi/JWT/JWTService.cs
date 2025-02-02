@@ -24,6 +24,7 @@ public class JWTService : IJWTService
     {
         _logger.LogInformation("Розпочато генерацію JWT токена для користувача: {Username}", user.UserName);
 
+        // Перевіряємо налаштування JWT
         if (string.IsNullOrEmpty(_jwtSettings.Key))
         {
             _logger.LogError("JWT Key порожній.");
@@ -42,29 +43,35 @@ public class JWTService : IJWTService
             throw new InvalidOperationException("JWT Audience cannot be null or empty.");
         }
 
-        var claims = new[]
+        // Формуємо claims
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+            new Claim(JwtRegisteredClaimNames.Sub, user.UserName), // Унікальний ідентифікатор користувача
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Унікальний ідентифікатор токена
+            new Claim(ClaimTypes.Name, user.Email), // Додаємо email як claim
+            new Claim("id", user.Id.ToString()) // Додаємо ID користувача як кастомний claim
         };
 
+        // Створюємо ключ для підпису
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        _logger.LogInformation("Створення токена з параметрами: Issuer={Issuer}, Audience={Audience}, Expiry={ExpiryMinutes}",
+        _logger.LogInformation(
+            "Створення токена з параметрами: Issuer={Issuer}, Audience={Audience}, Expiry={ExpiryMinutes}",
             _jwtSettings.Issuer, _jwtSettings.Audience, 30);
 
+        // Створюємо токен
         var token = new JwtSecurityToken(
             issuer: _jwtSettings.Issuer,
             audience: _jwtSettings.Audience,
             claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
+            expires: DateTime.UtcNow.AddMinutes(30),
             signingCredentials: creds);
 
         var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
         _logger.LogInformation("JWT токен успішно створено для користувача: {Username}", user.UserName);
+
         return jwt;
     }
 }

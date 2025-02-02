@@ -60,6 +60,35 @@ namespace WebApi
                         .AllowCredentials();
                 });
             });
+            
+            services.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Description = "Enter 'Bearer' followed by your token in the text input below.\n\nExample: 'Bearer 12345abcdef'"
+                });
+
+                options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                {
+                    {
+                        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                        {
+                            Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                            {
+                                Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
+
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -72,18 +101,19 @@ namespace WebApi
 
             app.UseHttpsRedirection();
             app.UseCors("AllowReactApp");
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-            // Для обробки помилок
-            app.UseMiddleware<ExceptionHandlingMiddleware>(); // Якщо є Middleware для обробки помилок
-
             app.UseRouting();
+
+            app.UseAuthentication(); // Має бути перед авторизацією
+            app.UseAuthorization();  // Розташовуйте між Routing та Endpoints
+
+            app.UseMiddleware<ExceptionHandlingMiddleware>(); // Для обробки помилок, якщо потрібно
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
         }
+
 
         private void AddJwtAuthentication(IServiceCollection services, JWTSettings jwtSettings)
         {
@@ -162,6 +192,7 @@ namespace WebApi
             
             services.AddScoped<IMovieRepository, MovieRepository>();
             services.AddScoped<TMDBService>() ;
+            services.AddScoped<IUserService, UserService>();
             
             services.AddHttpClient<TVService>();
             services.AddHttpClient<TMDBService>();
